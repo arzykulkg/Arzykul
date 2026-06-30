@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ky">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Арзыкуловтордун тукум дарагы</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Raleway:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#1a1410;--bg2:#2d2520;--bg3:#3d3228;
+  --gold:#D4A574;--gold2:#E8C9A0;--gold-glow:rgba(212,165,116,.35);--gold-soft:rgba(212,165,116,.12);
+  --accent:#1F7BA0;--accent2:#2A9FD8;--accent-glow:rgba(31,123,160,.4);--accent-soft:rgba(31,123,160,.15);
+  --node:#3a3228;--border:#5a4d42;
+  --text:#F5E6D3;--text2:#D4C4B8;--text3:#8B7D6F;
+  --female:#C41E3A;--fem-glow:rgba(196,30,58,.35);--fem-soft:rgba(196,30,58,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Raleway',sans-serif;background:var(--bg);color:var(--text)}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background-image:
+    radial-gradient(circle at 22% 28%,rgba(212,165,116,.08) 0%,transparent 55%),
+    radial-gradient(circle at 78% 72%,rgba(31,123,160,.06) 0%,transparent 55%),
+    repeating-linear-gradient(45deg,transparent,transparent 35px,rgba(212,165,116,.04) 35px,rgba(212,165,116,.04) 70px),
+    repeating-linear-gradient(-45deg,transparent,transparent 35px,rgba(31,123,160,.04) 35px,rgba(31,123,160,.04) 70px);
+  background-size:100% 100%,100% 100%,100% 100%,100% 100%;z-index:0;
+}
+
+/* TOP BAR */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:linear-gradient(135deg,rgba(45,37,32,.98) 0%,rgba(61,50,40,.98) 100%);backdrop-filter:blur(14px);
+  border-bottom:2px solid var(--gold);box-shadow:0 4px 20px rgba(0,0,0,.4);
+  display:flex;align-items:center;height:56px;
+}
+.tb-logo{width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;border-right:2px solid var(--gold);flex-shrink:0;}
+.tb-search{flex:1;display:flex;align-items:center;gap:10px;padding:0 18px;height:100%;}
+.tb-search input{flex:1;background:rgba(255,255,255,.08);border:1px solid var(--gold);outline:none;color:var(--text);font-family:'Raleway',sans-serif;font-size:.9rem;padding:8px 12px;border-radius:8px;transition:all .3s;}
+.tb-search input::placeholder{color:var(--text3)}
+.tb-search input:focus{background:rgba(255,255,255,.12);border-color:var(--accent2);box-shadow:0 0 12px var(--gold-glow)}
+.tb-icon{color:var(--gold);font-size:.9rem;flex-shrink:0}
+.tb-clear{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.8rem;padding:4px 8px;border-radius:6px;transition:color .15s;}
+.tb-clear:hover{color:var(--gold)}
+.tb-reset{
+  margin-right:12px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;color:#1a1410;
+  cursor:pointer;font-size:.8rem;padding:7px 16px;border-radius:100px;
+  font-family:'Raleway',sans-serif;font-weight:600;transition:all .2s;white-space:nowrap;
+  box-shadow:0 2px 8px var(--gold-glow);
+}
+.tb-reset:hover{transform:translateY(-2px);box-shadow:0 4px 12px var(--gold-glow)}
+
+/* CANVAS */
+#canvas{
+  position:fixed;top:56px;left:0;right:0;bottom:0;
+  overflow:hidden;z-index:5;cursor:grab;
+}
+#canvas:active{cursor:grabbing}
+#scene{position:absolute;transform-origin:0 0;will-change:transform;}
+
+/* SVG LINES */
+#lines{position:absolute;top:0;left:0;pointer-events:none;overflow:visible;}
+
+/* NODE PILL */
+.node{
+  position:absolute;display:flex;align-items:center;gap:10px;
+  padding:10px 16px 10px 10px;border-radius:100px;
+  border:2px solid var(--gold);background:linear-gradient(135deg,var(--node),rgba(61,50,40,.8));
+  cursor:pointer;user-select:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.3);
+  transition:border-color .2s,box-shadow .2s,transform .15s,opacity .3s;
+}
+.node:hover{border-color:var(--accent2);box-shadow:0 0 20px var(--accent-glow);transform:scale(1.05)}
+.node.female:hover{border-color:var(--female);box-shadow:0 0 20px var(--fem-glow)}
+.node.expanded{
+  background:linear-gradient(135deg,var(--accent),rgba(31,123,160,.9));
+  border-color:var(--accent2);box-shadow:0 0 30px var(--accent-glow);
+}
+.node.expanded.female{
+  background:linear-gradient(135deg,var(--female),rgba(196,30,58,.9));
+  border-color:var(--female);box-shadow:0 0 30px var(--fem-glow);
+}
+.node.leaf-node{cursor:default;opacity:.75}
+.node.leaf-node:hover{transform:none;border-color:var(--gold);box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.node.dimmed{opacity:.4}
+
+.n-av{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));border:2px solid rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:700;color:#1a1410;flex-shrink:0;
+  font-family:'Playfair Display',serif;
+}
+.node.expanded .n-av{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.4);color:#fff}
+.node.has-kids .n-av{background:var(--accent-soft);border-color:var(--accent2);color:var(--accent2)}
+.node.female.has-kids .n-av{background:var(--fem-soft);border-color:var(--female);color:var(--female)}
+.n-nm{font-size:.88rem;font-weight:600;color:var(--text);font-family:'Playfair Display',serif;letter-spacing:.3px}
+.node.expanded .n-nm{color:#fff;font-weight:700}
+.node.has-kids .n-nm{font-weight:700;color:var(--text2)}
+.n-ct{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--accent-soft);display:flex;align-items:center;justify-content:center;
+  font-size:.68rem;font-weight:700;color:var(--accent2);flex-shrink:0;margin-left:2px;
+}
+.node.female .n-ct{background:var(--fem-soft);color:var(--female)}
+.node.expanded .n-ct{background:rgba(255,255,255,.2);color:rgba(255,255,255,.9)}
+
+/* SEARCH OVERLAY */
+#srOverlay{
+  position:fixed;top:56px;left:0;right:0;bottom:0;z-index:200;
+  background:linear-gradient(135deg,rgba(26,20,16,.98),rgba(45,37,32,.98));backdrop-filter:blur(8px);
+  overflow-y:auto;padding:20px;display:none;border-top:2px solid var(--gold);
+}
+.sr-item{padding:12px 18px;border-radius:12px;cursor:pointer;border:2px solid var(--gold);background:linear-gradient(135deg,var(--node),rgba(61,50,40,.7));margin-bottom:10px;font-size:.88rem;transition:all .2s;color:var(--text);}
+.sr-item:hover{background:linear-gradient(135deg,var(--accent),rgba(31,123,160,.8));border-color:var(--accent2);color:#fff;transform:translateX(4px)}
+.sr-path{font-size:.75rem;color:var(--text3);margin-top:4px;font-family:'Raleway',sans-serif}
+.sr-none{text-align:center;color:var(--text3);padding:50px 20px;font-size:.95rem}
+
+/* CONTROLS */
+#controls{position:fixed;bottom:24px;right:20px;z-index:100;display:flex;flex-direction:column;gap:10px;}
+.ctrl-btn{
+  width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),rgba(31,123,160,.85));border:2px solid var(--gold);
+  color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,.4);font-weight:600;
+}
+.ctrl-btn:hover{transform:translateY(-4px);box-shadow:0 8px 20px var(--accent-glow);border-color:var(--accent2)}
+
+/* ADMIN PANEL */
+.admin-panel{
+  position:fixed;right:20px;bottom:90px;z-index:220;width:min(360px,calc(100vw - 32px));
+  background:linear-gradient(135deg,rgba(45,37,32,.98),rgba(61,50,40,.98));
+  border:2px solid var(--gold);border-radius:18px;box-shadow:0 16px 40px rgba(0,0,0,.35);
+  padding:18px;display:none;backdrop-filter:blur(12px);
+}
+.admin-panel.open{display:block;}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.panel-title{font-size:1rem;font-weight:700;color:var(--gold);font-family:'Playfair Display',serif;}
+.panel-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;}
+.panel-close:hover{color:var(--gold)}
+.panel-form{display:flex;flex-direction:column;gap:10px;}
+.panel-field{display:flex;flex-direction:column;gap:6px;font-size:.84rem;color:var(--text2)}
+.panel-field input,.panel-field select{
+  width:100%;padding:10px 12px;border:1px solid var(--gold);border-radius:10px;background:rgba(255,255,255,.08);
+  color:var(--text);font-family:'Raleway',sans-serif;outline:none;
+}
+.panel-field input:focus,.panel-field select:focus{border-color:var(--accent2);box-shadow:0 0 10px var(--gold-glow)}
+.panel-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;}
+.panel-btn{
+  border:none;padding:9px 14px;border-radius:10px;cursor:pointer;font-weight:600;font-family:'Raleway',sans-serif;
+}
+.panel-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1410;}
+.panel-btn.secondary{background:rgba(255,255,255,.08);color:var(--text2);border:1px solid var(--border)}
+.panel-status{margin-top:8px;font-size:.8rem;min-height:1rem;color:var(--text3)}
+.panel-status.success{color:#8ee39b}
+.panel-status.error{color:#ff9f9f}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="tb-logo">🌿</div>
+  <div class="tb-search">
+    <span class="tb-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Ат менен издөө..." oninput="doSearch(this.value)">
+    <button class="tb-clear" id="clearBtn" onclick="clearSearch()" style="display:none">✕</button>
+  </div>
+  <button class="tb-reset" onclick="resetTree()">⟳ Баштапкы</button>
+</div>
+
+<div id="canvas">
+  <div id="scene">
+    <svg id="lines"></svg>
+  </div>
+</div>
+
+<div id="srOverlay"></div>
+
+<div id="controls">
+  <button class="ctrl-btn" onclick="toggleAdminPanel()" title="Admin panel">⚙</button>
+  <button class="ctrl-btn" onclick="fitAll()" title="Сыйдыруу">⊡</button>
+  <button class="ctrl-btn" onclick="zoomBy(1.2)">+</button>
+  <button class="ctrl-btn" onclick="zoomBy(0.8)">−</button>
+</div>
+
+<div id="adminPanel" class="admin-panel" aria-hidden="true">
+  <div class="panel-head">
+    <div class="panel-title">Admin panel</div>
+    <button class="panel-close" onclick="closeAdminPanel()" title="Жабуу">✕</button>
+  </div>
+  <form class="panel-form" onsubmit="submitNewPerson(event)">
+    <div class="panel-field">
+      <label for="personName">Аты</label>
+      <input id="personName" name="personName" placeholder="Мисалы: Байбол" required>
+    </div>
+    <div class="panel-field">
+      <label for="personGender">Жынысы</label>
+      <select id="personGender" name="personGender">
+        <option value="m">Эркек</option>
+        <option value="f">Аял</option>
+      </select>
+    </div>
+    <div class="panel-field">
+      <label for="parentSelect">Ата-эне/туугандан</label>
+      <select id="parentSelect" name="parentSelect"></select>
+    </div>
+    <div class="panel-actions">
+      <button class="panel-btn secondary" type="button" onclick="closeAdminPanel()">Жабуу</button>
+      <button class="panel-btn primary" type="submit">Кошуу</button>
+    </div>
+    <div id="panelStatus" class="panel-status"></div>
+  </form>
+</div>
+
+<script>
+/* ══════════════════════════
+   DATA
+══════════════════════════ */
+var TREE={id:"mandagul",name:"Мандагул",children:[{id:"koybak",name:"Койбак",children:[{id:"koshbak_zn",name:"Кошбак",children:[{id:"akbarak",name:"Акбарак",children:[{id:"janbarak",name:"Жанбарак",children:[{id:"jeenkul",name:"Жеенкул",children:[{id:"shayimkul",name:"Шайымкул",children:[
+{id:"arzykul",name:"Арзыкул",children:[
+  {id:"toktochan",name:"Токтожан",f:1},
+  {id:"mahmut",name:"Махмуд",children:[
+  {id:"alicha",name:"Алича",f:1,children:[
+    {id:"adalat_al",name:"Адалат",f:1,note:"Күйөөсү: Муса",children:[
+      {id:"muzaffar_ad",name:"Музаффар"},{id:"mustafa_ad",name:"Мустафа"},
+      {id:"shahnoza_ad",name:"Шахноза",f:1},{id:"ainura_ad",name:"Айнура",f:1}
+    ]},
+    {id:"isa_al",name:"Иса",children:[
+      {id:"asatilla_ia",name:"Асатилла"},{id:"ikmatilla_ia",name:"Икматилла"},
+      {id:"zamira_ia",name:"Замира",f:1},{id:"gulmira_ia",name:"Гулмира",f:1},{id:"abdullo_ia",name:"Абдулло"}
+    ]},
+    {id:"abdulkhay_al",name:"Абдулхай",children:[
+      {id:"habibulo_al",name:"Хабибулло"},{id:"zarifa_al",name:"Зарифа",f:1},
+      {id:"orozali_al",name:"Орозали"},{id:"firuz_al",name:"Фируз"},{id:"yusup_al",name:"Юсуф"}
+    ]},
+    {id:"sabyr_al",name:"Сабыр",children:[
+      {id:"manas_al",name:"Манас"},{id:"muhammad_al",name:"Мухаммад"},
+      {id:"aizada_al",name:"Айзада",f:1},{id:"ibrahim_al",name:"Ибрахим"},
+      {id:"adina_al",name:"Адина",f:1},{id:"islam_al",name:"Ислам"}
+    ]},
+    {id:"jumagul_al",name:"Жумагул",f:1,children:[
+      {id:"aitkul_al",name:"Айткул",f:1},{id:"bakyt_al",name:"Бакыт"},
+      {id:"alikhan_al",name:"Алихан"},{id:"alisher_al",name:"Алишер"},
+      {id:"ishak_al",name:"Исхак"},{id:"ismail_al",name:"Исмаил"}
+    ]},
+    {id:"saly_al",name:"Салы",children:[
+      {id:"abdulbasit_al",name:"Абдулбасит"},{id:"abdusami_al",name:"Абдусами"},
+      {id:"nuriza_al",name:"Нуриза",f:1},{id:"nazima_al",name:"Назима",f:1},{id:"muhammad_saly",name:"Мухаммад"}
+    ]},
+    {id:"salokhidin_al",name:"Салохидин"}
+  ]}
+  ]},
+  {id:"akmat",name:"Ахмад",children:[
+    {id:"azzam",name:"Аззам",children:[
+      {id:"mukum",name:"Мукум",children:[{id:"abdrasul",name:"Абдрасул"},{id:"islam",name:"Ислам"}]},
+      {id:"talip",name:"Талип",children:[{id:"nurmahamat",name:"Нурмахамат"},{id:"abdishukur_t",name:"Абдишукур"}]},
+      {id:"kurbanali",name:"Курбанали",children:[{id:"umarali",name:"Умарали"},{id:"bilal_k",name:"Билал"}]},
+      {id:"saparali",name:"Сапарали",children:[{id:"ali_sap",name:"Али"},{id:"ilyaz",name:"Иляз"},{id:"bakir",name:"Бакир"}]},
+      {id:"rejebal",name:"Ражабали",children:[{id:"muhammad_rj",name:"Мухаммад"},{id:"aziza_rj",name:"Азиза",f:1}]},
+      {id:"shahlo_a",name:"Шахло",f:1}
+    ]},
+    {id:"karim",name:"Карим",children:[
+      {id:"kibiryo_k",name:"Кибирё",f:1,children:[
+        {id:"orozbek",name:"Орозбек"},{id:"dastan",name:"Дастан"},
+        {id:"datka",name:"Датка",f:1},{id:"bermet",name:"Бермет",f:1}
+      ]},
+      {id:"kamalidin",name:"Камалидин",children:[
+        {id:"fatima_k",name:"Фатима",f:1},{id:"muhammadsalih",name:"Мухаммедсалих"},{id:"malikazekhra",name:"Маликазехра",f:1}
+      ]},
+      {id:"sayra_k",name:"Сайра",f:1,children:[
+        {id:"nursultan",name:"Нурсултан"},{id:"muhammad_k",name:"Мухаммад"},
+        {id:"jusup",name:"Юсуф"},{id:"aliya",name:"Алия",f:1},{id:"abdulla_k",name:"Абдулла"}
+      ]},
+      {id:"feruza_k",name:"Феруза",f:1,children:[
+        {id:"rayana",name:"Раяна",f:1},{id:"rabiya",name:"Рабия",f:1},{id:"umar_k",name:"Умар"}
+      ]},
+      {id:"ibrahim_k",name:"Ибрахим",children:[
+        {id:"amina_k",name:"Амина",f:1},{id:"safiya",name:"Сафия",f:1},{id:"sabina",name:"Сабина",f:1}
+      ]}
+    ]},
+    {id:"mamaraim",name:"Махмарайым",f:1,children:[
+      {id:"alisher",name:"Алишер",children:[
+        {id:"guliza",name:"Гүлиза",f:1},{id:"almanbet",name:"Алманбет"},
+        {id:"altynay",name:"Алтынай",f:1},{id:"aliya_mr",name:"Алия",f:1}
+      ]},
+      {id:"gulsunay",name:"Гүлсунай",f:1},{id:"jyldyz",name:"Жылдыз",f:1},
+      {id:"jumagul",name:"Жумагүл",f:1},{id:"jumabai",name:"Жумабай"}
+    ]},
+    {id:"taaji",name:"Таажи",f:1,children:[
+      {id:"tashbubu_t",name:"Ташбүбү",f:1},{id:"tazagul",name:"Тазагүл",f:1},
+      {id:"kyzylgul",name:"Кызылгүл",f:1},{id:"rano",name:"Рано",f:1},
+      {id:"zymyrat",name:"Зымырат",f:1},{id:"arslanbek",name:"Арсланбек"},{id:"mirbek",name:"Мирбек"}
+    ]},
+    {id:"zebo",name:"Зебо",f:1,children:[
+      {id:"aman",name:"Аман",children:[
+        {id:"alfiya",name:"Алфия",f:1},{id:"asiya",name:"Асия",f:1},
+        {id:"hadija_am",name:"Хадича",f:1},{id:"aysha",name:"Айша",f:1}
+      ]},
+      {id:"azamat",name:"Азамат",children:[
+        {id:"ibrahim_az",name:"Ибрахим"},{id:"menmet_az",name:"Мехмед"},
+        {id:"muhammed_az",name:"Мухаммед"},{id:"ilima_az",name:"Илима",f:1},{id:"safiya_az",name:"Сафия",f:1}
+      ]}
+    ]}
+  ]},
+  {id:"aijigit",name:"Айжигит"},
+  {id:"adil",name:"Адил",children:[
+    {id:"musa",name:"Муса",children:[
+      {id:"muzaffar",name:"Музаффар"},{id:"mustafa_m",name:"Мустафа"},
+      {id:"shahnoza",name:"Шахноза",f:1},{id:"ainura",name:"Айнура",f:1}
+    ]},
+    {id:"siraj",name:"Сиражидин",children:[
+      {id:"rahim",name:"Рахим"},{id:"gulnoza_s",name:"Гулноза",f:1},
+      {id:"gulanda_s",name:"Гуланда",f:1},{id:"shukurullo_s",name:"Шукурулло"}
+    ]},
+    {id:"mahmadsafon",name:"Махмадсафо",children:[
+      {id:"zhumabai_ms",name:"Жумабай"},{id:"nurullo_ms",name:"Нурулло"},
+      {id:"zarina_ms",name:"Зарина",f:1},{id:"aijigit_ms",name:"Айжигит"},
+      {id:"bilal_ms",name:"Билал"},{id:"asan_ms",name:"Асан"},{id:"zura_ms",name:"Зура",f:1}
+    ]},
+    {id:"shakir",name:"Шакир",children:[
+      {id:"safiya_sh",name:"Сафия",f:1},{id:"ali_sh",name:"Али"},{id:"amin",name:"Амин"},{id:"yasin",name:"Ясин"}
+    ]},
+    {id:"shari",name:"Шаари",f:1,children:[
+      {id:"nimat_sh",name:"Нимат"},{id:"nisrat_sh",name:"Нисрат",f:1},
+      {id:"sanovar_sh",name:"Сановар",f:1},{id:"sabohat_sh",name:"Сабохат",f:1},
+      {id:"tashbubu_sh",name:"Ташбүбү",f:1},{id:"nazar_sh2",name:"Назар"}
+    ]},
+    {id:"bari",name:"Барги",f:1,children:[
+      {id:"hayrullo_b",name:"Хайрулло"},{id:"gulsara_b",name:"Гулсара",f:1},
+      {id:"maisara_b",name:"Майсара",f:1},{id:"aisara_b",name:"Айсара",f:1},{id:"kurasan_b",name:"Курасан"}
+    ]},
+    {id:"asalkan",name:"Асалкан",f:1,children:[
+      {id:"sailikhan_a",name:"Сайлихан",f:1},{id:"raikhan_a",name:"Райхан",f:1},
+      {id:"fazlidin_a",name:"Фазлидин"},{id:"shahabidin_a",name:"Шахабидин"},
+      {id:"azamat_a",name:"Азамат"},{id:"ainura_a",name:"Айнура",f:1}
+    ]},
+    {id:"zuurakan",name:"Зуурахан",f:1,children:[
+      {id:"madina_zu",name:"Мадина",f:1},{id:"bakir_zu",name:"Бакир"}
+    ]},
+    {id:"dilbar",name:"Дилбар",f:1,children:[
+      {id:"kurbanai_d",name:"Курбанай",f:1},{id:"muhammad_d",name:"Мухаммед"},
+      {id:"baktybek_d",name:"Бактыбек"},{id:"azamat_d",name:"Азамат"},{id:"sumaya_d",name:"Сумая",f:1}
+    ]},
+    {id:"zulaykha",name:"Зулайха",f:1,children:[
+      {id:"asatilla_z",name:"Асатилла"},{id:"ikmatilla_z",name:"Икматилла"},
+      {id:"zamira_z",name:"Замира",f:1},{id:"gulmira_z",name:"Гулмира",f:1},{id:"abdullo_z",name:"Абдулло"}
+    ]}
+  ]},
+  {id:"mamadi",name:"Махмади",children:[
+    {id:"mahmanabi",name:"Махманаби",children:[
+      {id:"muhammed",name:"Мухаммед",children:[{id:"ahat",name:"Ахат"}]},
+      {id:"sherali",name:"Шерали",children:[{id:"halilulo",name:"Халилулло"},{id:"ramazan",name:"Рамазан"}]},
+      {id:"mahbuba",name:"Махбуба",f:1},{id:"habiba",name:"Хабиба",f:1},
+      {id:"hasan_m",name:"Хасан"},{id:"zuura_m",name:"Зуура",f:1},{id:"abdulla_m",name:"Абдулла"}
+    ]},
+    {id:"kadyrali",name:"Кадырали",children:[
+      {id:"habibulla",name:"Хабибулла",children:[{id:"muhammad_h",name:"Мухаммад"}]},
+      {id:"mustafa_k",name:"Мустафа",children:[{id:"abidin",name:"Абидин"},{id:"alixan",name:"Алихан"}]},
+      {id:"raziya",name:"Разия",f:1},{id:"marziya",name:"Марзия",f:1}
+    ]},
+    {id:"kiymatkan",name:"Кыйматхан",f:1,children:[{id:"sayfullo",name:"Сайфулло"}]},
+    {id:"usen",name:"Үсөн",children:[{id:"hayrullo",name:"Хайрулло"},{id:"yarmuhammad",name:"Ярмухаммад"}]},
+    {id:"nazakat",name:"Назакат",f:1,children:[
+      {id:"rahim_nz",name:"Рахим"},{id:"gulnoza_nz",name:"Гулноза",f:1},
+      {id:"gulanda_nz",name:"Гуланда",f:1},{id:"shukurullo_nz",name:"Шукурулло"}
+    ]},
+    {id:"jamilya",name:"Жамиля",f:1},
+    {id:"giyaz",name:"Гыяз",children:[
+      {id:"nurmuhammad",name:"Нурмухаммад",children:[{id:"ahmad_nm",name:"Ахмад"}]},
+      {id:"umar_g",name:"Умар"},{id:"firdaus",name:"Фирдаус",f:1},
+      {id:"aziz",name:"Азиз"},{id:"rayana_g",name:"Раяна",f:1},
+      {id:"hamza",name:"Хамза"},{id:"imran_g",name:"Имран"}
+    ]}
+  ]},
+  {id:"hadija",name:"Хадижа",f:1,children:[
+    {id:"junus",name:"Жунус",children:[
+      {id:"nimat",name:"Нимат"},{id:"nisrat",name:"Нисрат",f:1},
+      {id:"sanovar",name:"Сановар",f:1},{id:"sabohat",name:"Сабохат",f:1},
+      {id:"tashbubu_j",name:"Ташбүбү",f:1},{id:"nazar_j",name:"Назар"}
+    ]},
+    {id:"kurbanbuush",name:"Курбанбүүш",f:1,children:[
+      {id:"salim",name:"Салим"},{id:"orozmat",name:"Орозмат"},
+      {id:"meerinsa",name:"Мееринса",f:1},{id:"orozali",name:"Орозали"}
+    ]},
+    {id:"hafiza",name:"Хафиза",f:1,children:[
+      {id:"kamalidin_h",name:"Камалидин"},{id:"sayra_h",name:"Сайра",f:1},
+      {id:"feruza_h",name:"Феруза",f:1},{id:"ibrahim_h",name:"Ибрахим"}
+    ]}
+  ]}
+]},
+{id:"koshbak_shay",name:"Кошбак",children:[
+  {id:"nazar_sh",name:"Назар",children:[
+    {id:"mamyt_sh",name:"Мамыт"},{id:"kurbanbek_sh",name:"Курбанбек"}
+  ]},
+  {id:"sayitkan_sh",name:"Сайыткан",children:[
+    {id:"suyun_sh",name:"Суйун",children:[{id:"altynbek_sh",name:"Алтынбек"}]}
+  ]}
+]}
+]}]}]}]}]}]}]};
+
+/* ══════════════════════════
+   INDEX
+══════════════════════════ */
+var nodeMap={}, parentMap={};
+var STORAGE_KEY="arzykul_admin_entries";
+function indexTree(n, par){
+  nodeMap[n.id]=n;
+  parentMap[n.id]=par||null;
+  if(n.children) n.children.forEach(function(c){indexTree(c,n.id);});
+}
+function buildIndex(){
+  nodeMap={}; parentMap={}; indexTree(TREE, null);
+}
+buildIndex();
+
+function refreshParentSelect(){
+  var select=document.getElementById("parentSelect");
+  if(!select) return;
+  var ids=Object.keys(nodeMap).sort(function(a,b){return nodeMap[a].name.localeCompare(nodeMap[b].name);});
+  select.innerHTML="";
+  ids.forEach(function(id){
+    var opt=document.createElement("option");
+    opt.value=id;
+    opt.textContent=nodeMap[id].name;
+    select.appendChild(opt);
+  });
+}
+
+function saveAdminEntries(){
+  try{
+    var entries=[];
+    function walk(n, parentId){
+      if(n && n.id && String(n.id).indexOf("custom_")===0){
+        entries.push({id:n.id,parentId:parentId,name:n.name,gender:n.f?"f":"m"});
+      }
+      if(n && n.children){n.children.forEach(function(c){walk(c,n.id);});}
+    }
+    walk(TREE,null);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }catch(e){}
+}
+
+function loadAdminEntries(){
+  try{
+    var raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    var entries=JSON.parse(raw);
+    if(!Array.isArray(entries)) return;
+    entries.forEach(function(entry){
+      if(!entry || !entry.name || !entry.parentId) return;
+      var parent=nodeMap[entry.parentId];
+      if(!parent) return;
+      if(!parent.children) parent.children=[];
+      parent.children.push({id:entry.id || ("custom_"+Date.now().toString(36)), name:entry.name, f:entry.gender==="f"?1:0});
+    });
+    buildIndex();
+    refreshParentSelect();
+  }catch(e){}
+}
+
+function toggleAdminPanel(){
+  var panel=document.getElementById("adminPanel");
+  if(!panel) return;
+  var open=panel.classList.contains("open");
+  panel.classList.toggle("open", !open);
+  panel.setAttribute("aria-hidden", open?"true":"false");
+  if(!open){
+    refreshParentSelect();
+    var status=document.getElementById("panelStatus");
+    if(status) status.textContent="";
+  }
+}
+
+function closeAdminPanel(){
+  var panel=document.getElementById("adminPanel");
+  if(panel){
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden","true");
+  }
+}
+
+function submitNewPerson(e){
+  e.preventDefault();
+  var name=document.getElementById("personName").value.trim();
+  var gender=document.getElementById("personGender").value;
+  var parentId=document.getElementById("parentSelect").value;
+  var status=document.getElementById("panelStatus");
+  if(!name){
+    if(status){status.textContent="Атыңызды жазыңыз."; status.className="panel-status error";}
+    return;
+  }
+  var parent=nodeMap[parentId] || TREE;
+  if(!parent){
+    if(status){status.textContent="Туура аталышты тандаңыз."; status.className="panel-status error";}
+    return;
+  }
+  if(!parent.children) parent.children=[];
+  var newNode={id:"custom_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), name:name};
+  if(gender==="f") newNode.f=1;
+  parent.children.push(newNode);
+  buildIndex();
+  expanded[parentId]=true;
+  expanded["mandagul"]=true;
+  renderMap();
+  saveAdminEntries();
+  refreshParentSelect();
+  document.getElementById("personName").value="";
+  if(status){status.textContent="Исмиңиз кошулду."; status.className="panel-status success";}
+  setTimeout(function(){if(status) status.textContent="";},1800);
+}
+
+function countDesc(n){
+  if(!n.children||!n.children.length) return 0;
+  return n.children.reduce(function(s,c){return s+1+countDesc(c);},0);
+}
+function ini(s){return s.slice(0,1).toUpperCase();}
+function nodeW(n){return Math.max(130, n.name.length*9+82);}
+
+/* ══════════════════════════
+   MIND MAP STATE
+   expanded: Set of expanded node ids
+   positions: id -> {x,y,w,h}  (center of right edge = anchor out)
+══════════════════════════ */
+var expanded = {};   // id -> true/false (toggled)
+var positions = {};  // id -> {x, y, w, h}
+var NODE_H = 44;
+var GAP_X = 200;     // horizontal gap between parent right edge and child left
+var GAP_Y = 54;      // vertical spacing between siblings
+
+/* ══════════════════════════
+   PAN / ZOOM
+══════════════════════════ */
+var tx=0, ty=0, sc=1;
+var drag={on:false,sx:0,sy:0,stx:0,sty:0};
+var canvas=document.getElementById("canvas");
+var scene=document.getElementById("scene");
+
+canvas.addEventListener("mousedown",function(e){
+  if(e.target.closest(".node")) return;
+  drag={on:true,sx:e.clientX,sy:e.clientY,stx:tx,sty:ty};
+});
+window.addEventListener("mousemove",function(e){
+  if(!drag.on) return;
+  tx=drag.stx+(e.clientX-drag.sx); ty=drag.sty+(e.clientY-drag.sy);
+  applyT();
+});
+window.addEventListener("mouseup",function(){drag.on=false;});
+canvas.addEventListener("touchstart",function(e){
+  if(e.touches.length===1&&!e.target.closest(".node")){
+    var t=e.touches[0];
+    drag={on:true,sx:t.clientX,sy:t.clientY,stx:tx,sty:ty};
+  }
+},{passive:true});
+canvas.addEventListener("touchmove",function(e){
+  if(!drag.on||e.touches.length!==1) return;
+  var t=e.touches[0];
+  tx=drag.stx+(t.clientX-drag.sx); ty=drag.sty+(t.clientY-drag.sy);
+  applyT(); e.preventDefault();
+},{passive:false});
+canvas.addEventListener("touchend",function(){drag.on=false;});
+canvas.addEventListener("wheel",function(e){
+  e.preventDefault();
+  var f=e.deltaY<0?1.1:0.9;
+  var r=canvas.getBoundingClientRect();
+  var mx=e.clientX-r.left, my=e.clientY-r.top;
+  sc=Math.max(0.2,Math.min(4,sc*f));
+  tx=mx-(mx-tx)*f; ty=my-(my-ty)*f;
+  applyT();
+},{passive:false});
+function applyT(){scene.style.transform="translate("+tx+"px,"+ty+"px) scale("+sc+")";}
+function zoomBy(f){
+  var cw=canvas.clientWidth,ch=canvas.clientHeight;
+  sc=Math.max(0.2,Math.min(4,sc*f));
+  tx=cw/2-(cw/2-tx)*f; ty=ch/2-(ch/2-ty)*f;
+  applyT();
+}
+function fitAll(){
+  var els=scene.querySelectorAll(".node");
+  if(!els.length) return;
+  var mn={x:Infinity,y:Infinity}, mx={x:-Infinity,y:-Infinity};
+  els.forEach(function(el){
+    var l=parseFloat(el.style.left)||0, t=parseFloat(el.style.top)||0;
+    var w=el.offsetWidth||160, h=NODE_H;
+    mn.x=Math.min(mn.x,l); mn.y=Math.min(mn.y,t);
+    mx.x=Math.max(mx.x,l+w); mx.y=Math.max(mx.y,t+h);
+  });
+  var cw=canvas.clientWidth, ch=canvas.clientHeight;
+  var pw=mx.x-mn.x+80, ph=mx.y-mn.y+80;
+  sc=Math.min(Math.max(0.25,Math.min(cw/pw,ch/ph)),1.4);
+  tx=(cw-pw*sc)/2-mn.x*sc+40*sc;
+  ty=(ch-ph*sc)/2-mn.y*sc+40*sc;
+  applyT();
+}
+
+/* ══════════════════════════
+   LAYOUT ENGINE
+   Recursively assign y positions (subtree height),
+   then place nodes with fixed x = depth * (nodeW + GAP_X)
+══════════════════════════ */
+
+// Returns total height consumed by subtree of n (if expanded)
+function subtreeH(n){
+  if(!expanded[n.id]||!n.children||!n.children.length) return NODE_H;
+  var sum=0;
+  n.children.forEach(function(c){sum+=subtreeH(c)+GAP_Y-NODE_H;});
+  sum+=NODE_H; // last child
+  // actually: total = children.length * NODE_H + (children.length-1) * (GAP_Y - NODE_H)
+  // simpler: sum of each child subtreeH + gaps between
+  return sum;
+}
+
+function subtreeHeight(n){
+  if(!expanded[n.id]||!n.children||!n.children.length) return NODE_H;
+  var total=0;
+  n.children.forEach(function(c,i){
+    if(i>0) total+=GAP_Y-NODE_H; // gap between siblings
+    total+=subtreeHeight(c);
+  });
+  return total;
+}
+
+// Place node n at left=x, center-y=cy
+// Returns array of {id,x,y,w,h,data} and edges {x1,y1,x2,y2}
+function layout(n, x, cy, nodesArr, edgesArr, parentAnchor){
+  var w=nodeW(n), h=NODE_H;
+  var top=cy-h/2;
+  positions[n.id]={x:x,y:top,w:w,h:h};
+  nodesArr.push({id:n.id, x:x, y:top, w:w, h:h, data:n});
+
+  if(parentAnchor){
+    edgesArr.push({
+      x1:parentAnchor.x, y1:parentAnchor.y,
+      x2:x,              y2:cy
+    });
+  }
+
+  if(expanded[n.id]&&n.children&&n.children.length){
+    var childX=x+w+GAP_X;
+    // compute total height of all children subtrees + gaps
+    var totalH=0;
+    n.children.forEach(function(c,i){
+      if(i>0) totalH+=(GAP_Y-NODE_H);
+      totalH+=subtreeHeight(c);
+    });
+    var startCY=cy-totalH/2+subtreeHeight(n.children[0])/2;
+    var curCY=cy-totalH/2;
+    n.children.forEach(function(c){
+      var ch=subtreeHeight(c);
+      var childCY=curCY+ch/2;
+      layout(c, childX, childCY, nodesArr, edgesArr, {x:x+w, y:cy});
+      curCY+=ch+(GAP_Y-NODE_H);
+    });
+  }
+}
+
+/* ══════════════════════════
+   RENDER
+══════════════════════════ */
+var domNodes={}; // id -> el  (persistent DOM elements)
+var domLines={}; // edgeKey -> path el
+
+function expandNode(id){
+  if(!nodeMap[id]) return;
+  var n=nodeMap[id];
+  if(!n.children||!n.children.length) return;
+
+  // toggle
+  if(expanded[id]){
+    // collapse: remove this and all descendants
+    collapseSubtree(id);
+  } else {
+    expanded[id]=true;
+  }
+  renderMap();
+  
+  // Auto-pan to show the expanded node
+  setTimeout(function(){
+    var pos=positions[id];
+    if(pos){
+      var cw=document.getElementById("canvas").clientWidth;
+      var ch=document.getElementById("canvas").clientHeight;
+      var nodeX=pos.x+pos.w/2;
+      var nodeY=pos.y+pos.h/2;
+      // Center the node on screen with smooth animation
+      var targetTx=cw/2-nodeX*sc;
+      var targetTy=ch/2-nodeY*sc;
+      animatePan(targetTx, targetTy, 400);
+    }
+  },50);
+}
+
+function animatePan(targetTx, targetTy, duration){
+  var startTx=tx, startTy=ty;
+  var startTime=Date.now();
+  
+  function ease(t){
+    // ease-out cubic
+    t=Math.min(1,t);
+    return 1-Math.pow(1-t,3);
+  }
+  
+  function frame(){
+    var now=Date.now();
+    var elapsed=now-startTime;
+    var progress=Math.min(1, elapsed/duration);
+    var t=ease(progress);
+    tx=startTx+(targetTx-startTx)*t;
+    ty=startTy+(targetTy-startTy)*t;
+    applyT();
+    if(progress<1){
+      requestAnimationFrame(frame);
+    }
+  }
+  
+  requestAnimationFrame(frame);
+}
+
+function collapseSubtree(id){
+  expanded[id]=false;
+  var n=nodeMap[id];
+  if(n.children) n.children.forEach(function(c){collapseSubtree(c.id);});
+}
+
+function resetTree(){
+  // collapse all except root
+  Object.keys(expanded).forEach(function(k){expanded[k]=false;});
+  expanded["mandagul"]=true;
+  renderMap();
+  setTimeout(fitAll,60);
+}
+
+function renderMap(){
+  var nodesArr=[], edgesArr=[];
+  // start root at x=40, cy=300
+  layout(TREE, 40, 300, nodesArr, edgesArr, null);
+
+  // ── update SVG lines ──
+  var svg=document.getElementById("lines");
+  // collect current edge keys
+  var newEdgeKeys={};
+  edgesArr.forEach(function(e){
+    var key=e.x1+","+e.y1+","+e.x2+","+e.y2;
+    newEdgeKeys[key]=e;
+  });
+  // remove stale
+  Object.keys(domLines).forEach(function(k){
+    if(!newEdgeKeys[k]){domLines[k].remove();delete domLines[k];}
+  });
+  // add new
+  Object.keys(newEdgeKeys).forEach(function(k){
+    if(!domLines[k]){
+      var e=newEdgeKeys[k];
+      var path=document.createElementNS("http://www.w3.org/2000/svg","path");
+      var mx=(e.x1+e.x2)/2;
+      path.setAttribute("d","M "+e.x1+" "+e.y1+" C "+mx+" "+e.y1+" "+mx+" "+e.y2+" "+e.x2+" "+e.y2);
+      path.setAttribute("fill","none");
+      path.setAttribute("stroke","rgba(212,165,116,.28)");
+      path.setAttribute("stroke-width","2");
+      path.setAttribute("stroke-linecap","round");
+      svg.appendChild(path);
+      domLines[k]=path;
+    }
+  });
+  // update SVG size
+  var maxX=0,maxY=0;
+  nodesArr.forEach(function(nd){maxX=Math.max(maxX,nd.x+nd.w+80);maxY=Math.max(maxY,nd.y+nd.h+80);});
+  svg.setAttribute("width",Math.max(maxX,800));
+  svg.setAttribute("height",Math.max(maxY,600));
+
+  // ── update node DOM elements ──
+  var newIds={};
+  nodesArr.forEach(function(nd){newIds[nd.id]=nd;});
+
+  // remove nodes no longer in layout
+  Object.keys(domNodes).forEach(function(id){
+    if(!newIds[id]){domNodes[id].remove();delete domNodes[id];}
+  });
+
+  // update or create nodes
+  nodesArr.forEach(function(nd){
+    var n=nd.data;
+    var hasKids=n.children&&n.children.length>0;
+    var isExp=!!expanded[n.id];
+    var cd=countDesc(n);
+
+    if(!domNodes[nd.id]){
+      // create
+      var el=document.createElement("div");
+      domNodes[nd.id]=el;
+      scene.appendChild(el);
+      if(hasKids){
+        (function(id){
+          el.addEventListener("click",function(e){e.stopPropagation();expandNode(id);});
+        })(nd.id);
+      }
+    }
+    var el=domNodes[nd.id];
+    // update classes
+    var cls="node"
+      +(isExp?" expanded":"")
+      +(n.f?" female":"")
+      +(hasKids?" has-kids":" leaf-node");
+    el.className=cls;
+    // update position
+    el.style.left=nd.x+"px";
+    el.style.top=nd.y+"px";
+    el.style.width=nd.w+"px";
+    // update content
+    var inner='<div class="n-av">'+ini(n.name)+'</div>'
+      +'<div class="n-nm">'+n.name+'</div>';
+    if(hasKids) inner+='<div class="n-ct">'+cd+'</div>';
+    el.innerHTML=inner;
+  });
+}
+
+/* ══════════════════════════
+   SEARCH
+══════════════════════════ */
+function doSearch(q){
+  document.getElementById("clearBtn").style.display=q?"block":"none";
+  var ov=document.getElementById("srOverlay");
+  if(!q||q.length<2){ov.style.display="none";return;}
+  var res=[];
+  for(var id in nodeMap){
+    if(nodeMap[id].name.toLowerCase().indexOf(q.toLowerCase())>=0) res.push(nodeMap[id]);
+  }
+  ov.style.display="block";
+  if(!res.length){ov.innerHTML='<div class="sr-none">Табылган жок — "'+q+'"</div>';return;}
+  var html="";
+  res.slice(0,16).forEach(function(n){
+    // build path
+    var p=[],pid=parentMap[n.id];
+    while(pid){p.unshift(nodeMap[pid].name);pid=parentMap[pid];}
+    html+='<div class="sr-item" onclick="jumpTo(\''+n.id+'\')">'+(n.f?"♀ ":"")+n.name+'<div class="sr-path">'+p.join(" › ")+'</div></div>';
+  });
+  ov.innerHTML=html;
+}
+function clearSearch(){
+  document.getElementById("searchInput").value="";
+  document.getElementById("clearBtn").style.display="none";
+  document.getElementById("srOverlay").style.display="none";
+}
+function jumpTo(id){
+  clearSearch();
+  // expand all ancestors
+  var pid=parentMap[id];
+  while(pid){expanded[pid]=true;pid=parentMap[pid];}
+  renderMap();
+  // scroll to node
+  setTimeout(function(){
+    var el=domNodes[id];
+    if(!el) return;
+    var l=parseFloat(el.style.left)||0, t=parseFloat(el.style.top)||0;
+    var cw=canvas.clientWidth, ch=canvas.clientHeight;
+    tx=cw/2-l*sc-80*sc; ty=ch/2-t*sc-22*sc;
+    applyT();
+  },60);
+}
+
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape") clearSearch();
+});
+
+/* ══════════════════════════
+   INIT
+══════════════════════════ */
+loadAdminEntries();
+expanded["mandagul"]=true;
+refreshParentSelect();
+renderMap();
+setTimeout(function(){
+  var cw=canvas.clientWidth, ch=canvas.clientHeight;
+  sc=0.9; tx=60; ty=ch/2-260;
+  applyT();
+},30);
+</script>
+</body>
+</html>
