@@ -124,6 +124,53 @@ body::before{
   transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,.4);font-weight:600;
 }
 .ctrl-btn:hover{transform:translateY(-4px);box-shadow:0 8px 20px var(--accent-glow);border-color:var(--accent2)}
+.admin-overlay,
+#adminPanel{
+  display:none!important;
+}
+.admin-overlay{
+  position:fixed;bottom:120px;right:20px;top:auto;z-index:250;
+  width:min(420px,calc(100vw - 32px));
+}
+.admin-overlay.open{display:block!important;}
+#adminPanel.open{display:block!important;}
+.admin-box{
+  width:100%;padding:18px 20px;border-radius:20px;
+  background:rgba(18,14,12,.98);border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 18px 52px rgba(0,0,0,.45);
+}
+.admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.admin-title{font-size:1.05rem;font-weight:700;color:var(--gold);}
+.admin-close{background:none;border:none;color:var(--text2);font-size:1.1rem;cursor:pointer;}
+.admin-close:hover{color:var(--gold);}
+.admin-form{display:grid;gap:12px;}
+.admin-field{display:flex;flex-direction:column;gap:6px;font-size:.88rem;color:var(--text2);}
+.admin-field label{font-size:.86rem;color:var(--text);}
+.admin-field input,.admin-field select,.admin-field textarea{
+  width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(212,165,116,.3);
+  background:rgba(255,255,255,.06);color:var(--text);outline:none;font-family:'Raleway',sans-serif;
+}
+.admin-field input:focus,.admin-field select:focus,.admin-field textarea:focus{
+  border-color:var(--accent2);box-shadow:0 0 14px rgba(212,165,116,.16);
+}
+.admin-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:6px;}
+.admin-btn{border:none;padding:11px 16px;border-radius:12px;cursor:pointer;font-weight:700;font-family:'Raleway',sans-serif;}
+.admin-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1410;}
+.admin-btn.secondary{background:rgba(255,255,255,.08);color:var(--text2);border:1px solid rgba(255,255,255,.08);}
+.admin-status{min-height:1.2rem;font-size:.85rem;color:var(--text3);}
+.admin-status.success{color:#8ee39b;}
+.admin-status.error{color:#ff9f9b;}
+.admin-panel{position:fixed;right:20px;bottom:90px;z-index:220;width:min(420px,calc(100vw - 32px));background:rgba(15,12,10,.96);border:1px solid rgba(255,255,255,.12);border-radius:20px;box-shadow:0 22px 50px rgba(0,0,0,.45);padding:22px;display:none;backdrop-filter:blur(18px);}
+.admin-panel.open{display:block;}
+.admin-panel .panel-title{font-size:1rem;font-weight:700;color:#f7e6c7;font-family:'Playfair Display',serif;margin-bottom:14px;}
+.admin-panel .panel-row{display:grid;gap:14px;margin-bottom:14px;}
+.admin-note{font-size:.85rem;color:#d9c8b3;line-height:1.5;}
+.admin-field input,.admin-field select,.admin-field textarea{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);color:#f8f1e6;}
+.admin-field input::placeholder{color:rgba(248,241,230,.65);}
+.admin-field select{appearance:none;-webkit-appearance:none;-moz-appearance:none;}
+.admin-field label{color:#f5e6d3;}
+.admin-actions .admin-btn.primary{background:linear-gradient(135deg,#f2c97f,#f7e6c7);color:#1a1410;}
+.admin-actions .admin-btn.secondary{background:rgba(255,255,255,.1);color:#f3e8d7;border-color:rgba(255,255,255,.18);}
 </style>
 </head>
 <body>
@@ -146,7 +193,67 @@ body::before{
 
 <div id="srOverlay"></div>
 
+<div id="adminLoginOverlay" class="admin-overlay" aria-hidden="true" style="display:none;">
+  <div class="admin-box" role="dialog" aria-modal="true" aria-labelledby="adminLoginTitle">
+    <div class="admin-header">
+      <div class="admin-title" id="adminLoginTitle">Admin Girişi</div>
+      <button class="admin-close" type="button" onclick="closeAdminLogin()" aria-label="Kapat">✕</button>
+    </div>
+    <form class="admin-form" onsubmit="handleAdminLogin(event)">
+      <div class="admin-field">
+        <label for="adminUsername">Kullanıcı adı</label>
+        <input id="adminUsername" autocomplete="username" value="admin" required>
+      </div>
+      <div class="admin-field">
+        <label for="adminPassword">Şifre</label>
+        <input id="adminPassword" type="password" autocomplete="current-password" required>
+      </div>
+      <div class="admin-actions">
+        <button class="admin-btn primary" type="submit">Giriş Yap</button>
+        <button class="admin-btn secondary" type="button" onclick="closeAdminLogin()">İptal</button>
+      </div>
+      <div id="adminLoginStatus" class="admin-status"></div>
+    </form>
+  </div>
+</div>
+
+<div id="adminPanel" class="admin-panel" aria-hidden="true" style="display:none;">
+  <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <div class="panel-title">Admin Panel</div>
+    <button class="admin-close" type="button" onclick="hideAdminPanel()" aria-label="Kapat">✕</button>
+  </div>
+  <div class="panel-row">
+    <div class="admin-note">Yeni kişi ekleyebilir, seçili kişiyi güncelleyebilir veya silebilirsiniz. Değişiklikler tarayıcıda saklanır.</div>
+  </div>
+  <div class="panel-row">
+    <label class="admin-field">Kişi seç
+      <select id="personSelect" onchange="selectManagedPerson()"><option value="">-- Kişi seç --</option></select>
+    </label>
+    <label class="admin-field">Ebeveyn
+      <select id="parentSelect"></select>
+    </label>
+  </div>
+  <div class="panel-row">
+    <label class="admin-field">Ad
+      <input id="personName" placeholder="Yeni veya mevcut kişi adı" required>
+    </label>
+    <label class="admin-field">Cinsiyet
+      <select id="personGender"><option value="m">Erkek</option><option value="f">Kadın</option></select>
+    </label>
+  </div>
+  <div class="panel-row">
+    <div class="admin-actions">
+      <button class="admin-btn primary" type="button" onclick="addManagedPerson()">Ekle</button>
+      <button class="admin-btn secondary" type="button" onclick="updateManagedPerson()">Güncelle</button>
+      <button class="admin-btn secondary" type="button" onclick="deleteManagedPerson()">Sil</button>
+      <button class="admin-btn secondary" type="button" onclick="logoutAdmin()">Çıkış</button>
+    </div>
+  </div>
+  <div id="adminPanelStatus" class="admin-status"></div>
+</div>
+
 <div id="controls">
+  <button class="ctrl-btn" onclick="openAdminPanel()" title="Admin">⚙</button>
   <button class="ctrl-btn" onclick="fitAll()" title="Сыйдыруу">⊡</button>
   <button class="ctrl-btn" onclick="zoomBy(1.2)">+</button>
   <button class="ctrl-btn" onclick="zoomBy(0.8)">−</button>
@@ -342,12 +449,285 @@ var TREE={id:"mandagul",name:"Мандагул",children:[{id:"koybak",name:"К�
    INDEX
 ══════════════════════════ */
 var nodeMap={}, parentMap={};
+var ADMIN_USER="admin";
+var ADMIN_HASH="a02ec992fd1ac20887e2eb95ba6cd5e3e01635599bf796992b301d15bb19c258";
+var TREE_STORAGE_KEY="arzykul_tree_data";
+var adminAuthenticated=false;
+
 function indexTree(n, par){
   nodeMap[n.id]=n;
   parentMap[n.id]=par||null;
   if(n.children) n.children.forEach(function(c){indexTree(c,n.id);});
 }
-indexTree(TREE, null);
+
+function buildIndex(){
+  nodeMap={}; parentMap={};
+  indexTree(TREE, null);
+}
+
+function hashText(text){
+  if(!window.crypto||!window.crypto.subtle){
+    return Promise.resolve(text);
+  }
+  var encoder=new TextEncoder();
+  return window.crypto.subtle.digest("SHA-256", encoder.encode(text)).then(function(hash){
+    var hex=[];
+    var view=new Uint8Array(hash);
+    view.forEach(function(b){ hex.push(("00"+b.toString(16)).slice(-2)); });
+    return hex.join("");
+  });
+}
+
+function loadSavedTree(){
+  try{
+    var raw=localStorage.getItem(TREE_STORAGE_KEY);
+    if(!raw) return;
+    var saved=JSON.parse(raw);
+    if(saved && typeof saved === "object" && saved.id){
+      TREE = saved;
+    }
+  }catch(e){}
+}
+
+function saveTree(){
+  try{
+    localStorage.setItem(TREE_STORAGE_KEY, JSON.stringify(TREE));
+  }catch(e){}
+}
+
+function authenticatedFromSession(){
+  adminAuthenticated = sessionStorage.getItem("adminLoggedIn") === "1";
+}
+
+function openAdminPanel(){
+  if(!adminAuthenticated){
+    openAdminLogin();
+    return;
+  }
+  showAdminPanel();
+}
+
+function openAdminLogin(){
+  var overlay=document.getElementById("adminLoginOverlay");
+  if(!overlay) return;
+  overlay.classList.add("open");
+  overlay.style.display="block";
+  overlay.setAttribute("aria-hidden","false");
+  document.getElementById("adminUsername").focus();
+}
+
+function closeAdminLogin(){
+  var overlay=document.getElementById("adminLoginOverlay");
+  if(!overlay) return;
+  overlay.classList.remove("open");
+  overlay.style.display="none";
+  overlay.setAttribute("aria-hidden","true");
+  var status=document.getElementById("adminLoginStatus");
+  if(status) status.textContent="";
+}
+
+function showAdminPanel(){
+  refreshAdminSelectors();
+  var panel=document.getElementById("adminPanel");
+  if(panel){
+    panel.classList.add("open");
+    panel.style.display="block";
+    panel.setAttribute("aria-hidden","false");
+  }
+  var status=document.getElementById("adminPanelStatus");
+  if(status) status.textContent="";
+}
+
+function hideAdminPanel(){
+  var panel=document.getElementById("adminPanel");
+  if(panel){
+    panel.classList.remove("open");
+    panel.style.display="none";
+    panel.setAttribute("aria-hidden","true");
+  }
+}
+
+function handleAdminLogin(e){
+  e.preventDefault();
+  var username=document.getElementById("adminUsername").value.trim();
+  var password=document.getElementById("adminPassword").value;
+  var status=document.getElementById("adminLoginStatus");
+  if(!username||!password){
+    if(status){ status.textContent="Kullanıcı adı ve şifre gerekli."; status.className="admin-status error"; }
+    return;
+  }
+  if(username!==ADMIN_USER){
+    if(status){ status.textContent="Kullanıcı adı veya şifre yanlış."; status.className="admin-status error"; }
+    return;
+  }
+  hashText(password).then(function(hash){
+    if(hash===ADMIN_HASH){
+      adminAuthenticated=true;
+      sessionStorage.setItem("adminLoggedIn","1");
+      if(status){ status.textContent="Giriş başarılı. Admin panel açılıyor..."; status.className="admin-status success"; }
+      closeAdminLogin();
+      showAdminPanel();
+      setTimeout(function(){ if(status) status.textContent=""; }, 1800);
+    } else {
+      if(status){ status.textContent="Kullanıcı adı veya şifre yanlış."; status.className="admin-status error"; }
+    }
+  });
+}
+
+function logoutAdmin(){
+  adminAuthenticated=false;
+  sessionStorage.removeItem("adminLoggedIn");
+  hideAdminPanel();
+  var status=document.getElementById("adminPanelStatus");
+  if(status){ status.textContent="Admin oturumu kapatıldı."; status.className="admin-status"; }
+}
+
+function refreshAdminSelectors(){
+  buildIndex();
+  var parentSelect=document.getElementById("parentSelect");
+  var personSelect=document.getElementById("personSelect");
+  if(!parentSelect||!personSelect) return;
+  var ids=Object.keys(nodeMap).sort(function(a,b){ return nodeMap[a].name.localeCompare(nodeMap[b].name); });
+  parentSelect.innerHTML="";
+  personSelect.innerHTML="<option value=\"\">-- Kişi seç --</option>";
+  ids.forEach(function(id){
+    var opt=document.createElement("option"); opt.value=id; opt.textContent=nodeMap[id].name;
+    parentSelect.appendChild(opt);
+    var opt2=opt.cloneNode(true);
+    personSelect.appendChild(opt2);
+  });
+  if(nodeMap["mandagul"]) parentSelect.value="mandagul";
+}
+
+function selectManagedPerson(){
+  var select=document.getElementById("personSelect");
+  var id=select.value;
+  var status=document.getElementById("adminPanelStatus");
+  if(!id){
+    document.getElementById("personName").value="";
+    document.getElementById("personGender").value="m";
+    if(status){ status.textContent="Yeni kişi ekleyebilirsiniz."; status.className="admin-status"; }
+    return;
+  }
+  var node=nodeMap[id];
+  if(node){
+    document.getElementById("personName").value=node.name||"";
+    document.getElementById("personGender").value=node.f?"f":"m";
+    document.getElementById("parentSelect").value=parentMap[id]||"mandagul";
+    if(status){ status.textContent="Seçilen kişi düzenlemek için hazır."; status.className="admin-status"; }
+  }
+}
+
+function findParentObject(id){
+  var pid=parentMap[id];
+  return pid?nodeMap[pid]:null;
+}
+
+function isDescendant(ancestorId, descendantId){
+  var current=parentMap[descendantId];
+  while(current){
+    if(current===ancestorId) return true;
+    current=parentMap[current];
+  }
+  return false;
+}
+
+function removeNodeById(id){
+  var parent=findParentObject(id);
+  if(!parent||!parent.children) return false;
+  for(var i=0;i<parent.children.length;i++){
+    if(parent.children[i].id===id){ parent.children.splice(i,1); return true; }
+  }
+  return false;
+}
+
+function addManagedPerson(){
+  var name=document.getElementById("personName").value.trim();
+  var gender=document.getElementById("personGender").value;
+  var parentId=document.getElementById("parentSelect").value;
+  var status=document.getElementById("adminPanelStatus");
+  if(!name){ if(status){ status.textContent="Bir isim giriniz."; status.className="admin-status error"; } return; }
+  var parent=nodeMap[parentId]||TREE;
+  if(!parent.children) parent.children=[];
+  var id="custom_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  parent.children.push({id:id,name:name,f:gender==="f"?1:0});
+  saveTree();
+  buildIndex();
+  refreshAdminSelectors();
+  renderMap();
+  if(status){ status.textContent="Kişi eklendi."; status.className="admin-status success"; }
+}
+
+function updateManagedPerson(){
+  var selected=document.getElementById("personSelect").value;
+  var name=document.getElementById("personName").value.trim();
+  var gender=document.getElementById("personGender").value;
+  var targetParent=document.getElementById("parentSelect").value;
+  var status=document.getElementById("adminPanelStatus");
+  if(!selected){ if(status){ status.textContent="Düzenlemek için bir kişi seçin."; status.className="admin-status error"; } return; }
+  if(!name){ if(status){ status.textContent="Bir isim giriniz."; status.className="admin-status error"; } return; }
+  var node=nodeMap[selected];
+  if(!node){ if(status){ status.textContent="Seçilen kişi bulunamadı."; status.className="admin-status error"; } return; }
+  node.name=name;
+  node.f=(gender==="f"?1:0);
+  if(targetParent && targetParent!==selected){
+    if(isDescendant(selected,targetParent)){
+      if(status){ status.textContent="Geçersiz ebeveyn seçimi."; status.className="admin-status error"; }
+      return;
+    }
+    var currentParent=findParentObject(selected);
+    var newParent=nodeMap[targetParent]||TREE;
+    if(currentParent){ removeNodeById(selected); }
+    if(!newParent.children) newParent.children=[];
+    newParent.children.push(node);
+  }
+  saveTree();
+  buildIndex();
+  refreshAdminSelectors();
+  renderMap();
+  if(status){ status.textContent="Kişi güncellendi."; status.className="admin-status success"; }
+}
+
+function deleteManagedPerson(){
+  var selected=document.getElementById("personSelect").value;
+  var status=document.getElementById("adminPanelStatus");
+  if(!selected){ if(status){ status.textContent="Silmek için bir kişi seçin."; status.className="admin-status error"; } return; }
+  if(selected===TREE.id){ if(status){ status.textContent="Kök kişi silinemez."; status.className="admin-status error"; } return; }
+  if(!confirm("Seçili kişiyi ve altındaki tüm kişileri silmek istediğinizden emin misiniz?")) return;
+  if(!removeNodeById(selected)){
+    if(status){ status.textContent="Kişi silinemedi."; status.className="admin-status error"; }
+    return;
+  }
+  saveTree();
+  buildIndex();
+  refreshAdminSelectors();
+  renderMap();
+  document.getElementById("personSelect").value="";
+  document.getElementById("personName").value="";
+  if(status){ status.textContent="Kişi silindi."; status.className="admin-status success"; }
+}
+
+function initAdmin(){
+  loadSavedTree();
+  authenticatedFromSession();
+  buildIndex();
+  closeAdminLogin();
+  hideAdminPanel();
+  var overlay=document.getElementById("adminLoginOverlay");
+  if(overlay){
+    overlay.classList.remove("open");
+    overlay.style.display="none";
+    overlay.setAttribute("aria-hidden","true");
+  }
+  var panel=document.getElementById("adminPanel");
+  if(panel){
+    panel.classList.remove("open");
+    panel.style.display="none";
+    panel.setAttribute("aria-hidden","true");
+  }
+}
+
+initAdmin();
 
 function countDesc(n){
   if(!n.children||!n.children.length) return 0;
